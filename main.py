@@ -9,62 +9,49 @@ from flask import Flask, request, render_template
 #import routes, os
 from flask import Flask, render_template, Response, jsonify, request, redirect, url_for
 from datetime import datetime
-from domain import Korisnici
-
+from domain import Korisnici, Pitanja, Specijalizacije, SavijetiList
+from flask_cors import CORS
 from flask import Flask, Response, jsonify, request, render_template, json
 from datetime import datetime
 from pony.orm import db_session, select
 from uuid import uuid4 as gid, UUID
 
 
+
 app = Flask(__name__)
-"""
-@app.route("/index", methods=["GET", "POST"])
-def pocetna():
-    return render_template('index.html')
 
-@app.route("/s", methods=["GET", "POST"])
-def pocetna():
-    return render_template('layout.html')
+CORS(app, resources={r'/*': {'origins': '*'}})
+def error(status=500, text="An error happened"):
+    return jsonify({"error": text}), status
 
-"""
-@app.route("/", methods=["GET", "POST"])
-def layout():
-    return render_template('prelayout.html')
 
-@app.route("/izbornik", methods=["GET", "POST"])
-def index():
-    return render_template('index.html')
+@app.route("/upit", methods=["POST"])
+def handleNewPost():
+    status, errors = Pitanja.dodajUpit(request.get_json())
+    if status:
+        return Response(status=201)
+    else:
+        r = Response(status=500)
+        r.set_data(errors)
+        return r
 
-@app.route("/pocetna", methods=["GET", "POST"])
-def pocetna():
-    return render_template('layout.html')
+@app.route("/upit", methods = ["GET"])
+def handlePosts():
+    postovi = Pitanja.listajP()
+    return jsonify({"data": postovi})
 
-@app.route("/log&sign", methods=["GET", "POST"])
-def logisign():
-    return render_template('loginsign.html')
+@app.route("/upit/<upit_id>", methods = ["PUT"])
+def handleUpit(upit_id):
+    data = request.get_json()
+    if data is None or "id" not in data:
+        return error(404, "non matching id")
+    response = Pitanja.update(data)
+    if response is None:
+        return error()
+    return Response(status=202)
 
-@app.route("/about", methods=["GET", "POST"])
-def izbornik():
-    return render_template('about.html')
 
-@app.route("/kontakti", methods=["GET", "POST"])
-def kontakti():
-    return render_template('contact.html')
-
-@app.route("/savjeti", methods=["GET", "POST"])
-def savjeti():
-    return render_template('savjeti.html')
-
-@app.route("/mojiPodaci", methods=["GET", "POST"])
-def mojiPodaci():
-    return render_template('mojiPodaci.html')
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    return render_template('login.html')
-
-@app.route("/signup", methods=["GET", "POST"])
+@app.route("/sign-up", methods=[ "POST"])
 def handleSignUp():
     status, errors = Korisnici.dodaj(request.get_json())
     if status:
@@ -74,28 +61,36 @@ def handleSignUp():
         r.set_data(errors)
         return r
 
-    
+@app.route("/sign-up", methods=["GET"])
+def handleUsers():
+    users = Korisnici.listaj()
+    return jsonify({"data": users})
 
-@app.route("/hello", methods=["GET"])
-def handle_korisnici():
-    korisnici = Korisnici.listaj()
-    return jsonify({"data":korisnici})
+@app.route("/login/<email>/<lozinka>", methods=["GET"])
+def handleLogin(email, lozinka):
+    email = str(email)
+    lozinka = str(lozinka)
+    login = Korisnici.prijava(email, lozinka)
+    return jsonify(login)
 
+@app.route("/kategorija", methods=["GET"])
+def handleKat():
+    kategorije = Specijalizacije.listajS()
+    return jsonify({"data": kategorije})
 
-@app.route("/hello", methods=["POST"])
-def handle_input_korisnici():
-    status, greske = Korisnici.dodaj(request.get_json())
-    if status:
-        return Response(status = 201)
-    else:
-        r = Response(status=500)
-        r.set_data(greske)
-        return r
+@app.route("/kategorija/<kat_id>", methods=['GET'])
+def odaberiKategoriju(kat_id):
+    id_kat = str(kat_id)
+    res = Specijalizacije.filter_spec(id_kat).to_dict
+    return jsonify(res)
 
-
+@app.route("/savjeti", methods=['GET'])
+def handleSavjeti():
+    savjeti = SavijetiList.listajSavjete()
+    return jsonify({"data": savjeti})    
 
 
 
 if __name__ == "__main__":
     app.debug = True
-    app.run("0.0.0.0", "8000")
+    app.run()
