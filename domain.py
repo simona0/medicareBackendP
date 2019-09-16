@@ -6,14 +6,12 @@ from flask import Flask, Response, jsonify, request, render_template, json
 import logging
 
 
-
 class Korisnici:
     @db_session()
     def listaj():
         q = select(user for user in Korisnik)
         data = [x.to_dict() for x in q]
         return data
-
 
     @db_session()
     def dodaj(user):
@@ -26,17 +24,15 @@ class Korisnici:
 
     @db_session()
     def prijava(email, lozinka):
-        korisnik = Korisnik.get(email = email)
+        korisnik = Korisnik.get(email=email)
         if korisnik:
             korisnik = korisnik.to_dict()
-            if korisnik["lozinka"]==lozinka:
+            if korisnik["lozinka"] == lozinka:
                 return korisnik
             else:
                 return "Pogrešna lozinka"
         else:
             return "Korisnik s tim podacima ne postoji!"
-
-
 
 
 class Specijalizacije:
@@ -52,15 +48,12 @@ class Specijalizacije:
         return spec
 
 
-
-
 class Pitanja:
     @db_session()
     def listajP():
         q = select(p for p in Pitanje)
         data = [x.to_dict() for x in q]
         return data
-
 
     @db_session()
     def dodajUpit(p):
@@ -88,5 +81,3 @@ class SavijetiList:
         q = select(s for s in Savjeti)
         data = [x.to_dict() for x in q]
         return data
-
-   
